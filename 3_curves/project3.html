@@ -217,7 +217,7 @@ $(document).ready(function() {
 		if ( selPt ) {
 			selPt.setAttribute("cx", event.clientX);
 			selPt.setAttribute("cy", event.clientY);
-			UpdateLines();
+			// UpdateLines();
 			UpdatePoints();
 			DrawScene();
 		}
@@ -226,7 +226,7 @@ $(document).ready(function() {
 		UpdateCanvasSize();
 		DrawScene();
 	});
-	UpdateLines();
+	// UpdateLines();
 	InitWebGL();
 	UpdatePoints();
 	DrawScene();

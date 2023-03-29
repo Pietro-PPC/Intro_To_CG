@@ -6,7 +6,21 @@ class CurveDrawer {
 		this.prog   = InitShaderProgram( curvesVS, curvesFS );
 		// [TO-DO] Other initializations should be done here.
 		// [TO-DO] This is a good place to get the locations of attributes and uniform variables.
+
+		this.buffer = {};
+		this.attrib = {};
+		this.uniform = {};
+
+		this.attrib.t = gl.getAttribLocation(this.prog, 't');
 		
+		this.uniform.mvp = gl.getUniformLocation(this.prog, 'mvp');
+
+		this.uniform.p = [];
+		this.uniform.p.push(gl.getUniformLocation(this.prog, 'p0'));
+		this.uniform.p.push(gl.getUniformLocation(this.prog, 'p1'));
+		this.uniform.p.push(gl.getUniformLocation(this.prog, 'p2'));
+		this.uniform.p.push(gl.getUniformLocation(this.prog, 'p3'));
+
 		// Initialize the attribute buffer
 		this.steps = 100;
 		var tv = [];
@@ -15,12 +29,26 @@ class CurveDrawer {
 		}
 		// [TO-DO] This is where you can create and set the contents of the vertex buffer object
 		// for the vertex attribute we need.
+
+		// Create buffer for tv and send data to GPU
+		this.buffer.t = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.t);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tv), gl.STATIC_DRAW);
+
 	}
 	setViewport( width, height )
 	{
 		// [TO-DO] This is where we should set the transformation matrix.
 		// [TO-DO] Do not forget to bind the program before you set a uniform variable value.
 		gl.useProgram( this.prog );	// Bind the program
+		var transfMatrix = [ // column major
+			2/width, 0,         0, 0,
+			0,       -2/height, 0, 0,
+			0,       0,         1, 0,
+			-1,      1,         0, 1
+		];
+		gl.uniformMatrix4fv(this.uniform.mvp, false, transfMatrix);
+
 	}
 	updatePoints( pt )
 	{
@@ -29,11 +57,27 @@ class CurveDrawer {
 		// [TO-DO] We can access the x and y coordinates of the i^th control points using
 		// var x = pt[i].getAttribute("cx");
 		// var y = pt[i].getAttribute("cy");
+
+		gl.useProgram(this.prog);
+		for (var i = 0; i < 4; ++i)
+			gl.uniform2f(this.uniform.p[i], pt[i].getAttribute("cx"), pt[i].getAttribute("cy"));
+		
 	}
 	draw()
 	{
 		// [TO-DO] This is where we give the command to draw the curve.
 		// [TO-DO] Do not forget to bind the program and set the vertex attribute.
+
+		
+		// Set t attribute
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer.t);
+		gl.vertexAttribPointer(this.attrib.t, 1, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(this.attrib.t);
+		
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.useProgram(this.prog);
+		gl.drawArrays(gl.LINE_STRIP, 0, this.steps);
+		// console.log("to desenhando");
 	}
 }
 
@@ -48,7 +92,9 @@ var curvesVS = `
 	void main()
 	{
 		// [TO-DO] Replace the following with the proper vertex shader code
-		gl_Position = vec4(0,0,0,1);
+		float tComp = 1.0-t;
+		vec2 finalPos = (tComp*tComp*tComp * p0) + (3.0 * tComp*tComp*t * p1) + (3.0 * tComp*t*t * p2) + (t*t*t * p3);
+		gl_Position = mvp * vec4(finalPos,0,1);
 	}
 `;
 
